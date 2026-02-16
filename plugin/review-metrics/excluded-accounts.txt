@@ -1,0 +1,3 @@
+# Excluded bot accounts for review-metrics
+# One account per line. Lines starting with # are comments.
+github-actions
