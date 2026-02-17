@@ -32,7 +32,7 @@ Collect and analyze team review metrics from GitHub pull requests.
 Run via the unified dispatch script:
 
 ```bash
-./scripts/dispatch.sh $0 $1
+../../scripts/dispatch.sh $0 $1
 ```
 
 Where `$0` is the period (default: `week`) and `$1` is the command.
@@ -42,16 +42,16 @@ If no command is provided, all rankings are shown.
 
 | Command | Dispatch |
 |---------|----------|
-| `/review-metrics` | `./scripts/dispatch.sh week` |
-| `/review-metrics last-week` | `./scripts/dispatch.sh last-week` |
-| `/review-metrics month comments` | `./scripts/dispatch.sh month comments` |
-| `/review-metrics last-week response-time` | `./scripts/dispatch.sh last-week response-time` |
-| `/review-metrics last-week fix-time` | `./scripts/dispatch.sh last-week fix-time` |
-| `/review-metrics last-week bottleneck` | `./scripts/dispatch.sh last-week bottleneck` |
-| `/review-metrics stuck` | `./scripts/dispatch.sh week stuck` |
-| `/review-metrics last-week reviewer-load` | `./scripts/dispatch.sh last-week reviewer-load` |
-| `/review-metrics last-week cycles` | `./scripts/dispatch.sh last-week cycles` |
-| `/review-metrics last-week pr-size` | `./scripts/dispatch.sh last-week pr-size` |
+| `/review-metrics` | `../../scripts/dispatch.sh week` |
+| `/review-metrics last-week` | `../../scripts/dispatch.sh last-week` |
+| `/review-metrics month comments` | `../../scripts/dispatch.sh month comments` |
+| `/review-metrics last-week response-time` | `../../scripts/dispatch.sh last-week response-time` |
+| `/review-metrics last-week fix-time` | `../../scripts/dispatch.sh last-week fix-time` |
+| `/review-metrics last-week bottleneck` | `../../scripts/dispatch.sh last-week bottleneck` |
+| `/review-metrics stuck` | `../../scripts/dispatch.sh week stuck` |
+| `/review-metrics last-week reviewer-load` | `../../scripts/dispatch.sh last-week reviewer-load` |
+| `/review-metrics last-week cycles` | `../../scripts/dispatch.sh last-week cycles` |
+| `/review-metrics last-week pr-size` | `../../scripts/dispatch.sh last-week pr-size` |
 
 ## Available Scripts
 
