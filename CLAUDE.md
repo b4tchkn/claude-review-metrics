@@ -1,4 +1,4 @@
-# Review Metrics Skill
+# Review Metrics Plugin
 
 Analyze GitHub PR review activity, team performance rankings, and review bottlenecks.
 
@@ -8,30 +8,37 @@ Analyze GitHub PR review activity, team performance rankings, and review bottlen
 - Uses GitHub GraphQL API + REST API to collect review data
 - **Rankings** (Top 3): comments, reviewed PRs, approved PRs, response time, fix time
 - **Analysis** (Team-wide): bottleneck detection, stuck PRs, reviewer load, review cycles, PR size correlation
-- Bot accounts automatically excluded (copilot, devin-ai, github-actions, renovate-approve)
+- Bot accounts automatically excluded (configure via `excluded-accounts.txt`)
 
 ## Directory Structure
 
 ```
-.claude/skills/review-metrics/
-├── CLAUDE.md          # This file (development guide)
-├── SKILL.md           # Skill definition (arguments, invocation rules)
-└── scripts/
-    ├── collect-metrics.sh           # Combined output of all rankings
-    ├── ranking-comments.sh          # Review comment count ranking
-    ├── ranking-reviewed.sh          # Reviewed PR count ranking
-    ├── ranking-approved.sh          # Approval count ranking
-    ├── ranking-response-time.sh     # Response time ranking
-    ├── ranking-fix-time.sh          # Fix time ranking (standalone)
-    ├── analysis-bottleneck.sh       # PR lifecycle phase breakdown
-    ├── analysis-stuck-prs.sh        # Currently stuck PRs
-    ├── analysis-reviewer-load.sh    # Team review workload distribution
-    ├── analysis-review-cycles.sh    # Review round patterns
-    ├── analysis-pr-size.sh          # PR size vs speed correlation
-    └── lib/
-        ├── common.sh                # Shared functions, constants, GraphQL queries
-        ├── collect-data.sh          # Data collection for ranking scripts
-        └── collect-data-extended.sh # Extended data collection for analysis scripts
+claude-review-metrics/
+├── .claude-plugin/
+│   └── plugin.json              # Plugin manifest
+├── skills/
+│   └── review-metrics/
+│       └── SKILL.md             # Skill definition (arguments, invocation rules)
+├── scripts/
+│   ├── collect-metrics.sh       # Combined output of all rankings
+│   ├── ranking-comments.sh      # Review comment count ranking
+│   ├── ranking-reviewed.sh      # Reviewed PR count ranking
+│   ├── ranking-approved.sh      # Approval count ranking
+│   ├── ranking-response-time.sh # Response time ranking
+│   ├── ranking-fix-time.sh      # Fix time ranking (standalone)
+│   ├── analysis-bottleneck.sh   # PR lifecycle phase breakdown
+│   ├── analysis-stuck-prs.sh    # Currently stuck PRs
+│   ├── analysis-reviewer-load.sh# Team review workload distribution
+│   ├── analysis-review-cycles.sh# Review round patterns
+│   ├── analysis-pr-size.sh      # PR size vs speed correlation
+│   └── lib/
+│       ├── common.sh            # Shared functions, constants, GraphQL queries
+│       ├── collect-data.sh      # Data collection for ranking scripts
+│       └── collect-data-extended.sh # Extended data collection for analysis scripts
+├── excluded-accounts.txt        # Bot accounts to exclude
+├── CLAUDE.md                    # This file (development guide)
+├── README.md                    # Plugin documentation
+└── LICENSE                      # Apache 2.0
 ```
 
 ## Architecture
@@ -117,7 +124,7 @@ Team-wide analysis. Flow: source `lib/common.sh` + `lib/collect-data-extended.sh
 - GitHub API rate limits apply. `collect-data.sh` uses pagination (1 call per 100 PRs); `ranking-fix-time.sh` makes 2-3 API calls per PR; analysis scripts use `collect-data-extended.sh` (1 call per 100 PRs with richer fields)
 - To add a new ranking: create `ranking-*.sh`, add argument mapping in SKILL.md
 - To add a new analysis: create `analysis-*.sh`, add argument mapping in SKILL.md
-- To add bot exclusions: edit `EXCLUDED_BOTS` in `lib/common.sh`
+- To add bot exclusions: edit `excluded-accounts.txt` at the repository root
 
 ## Dependencies
 

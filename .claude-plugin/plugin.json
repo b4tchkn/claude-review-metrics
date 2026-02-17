@@ -1,0 +1,20 @@
+{
+  "name": "claude-review-metrics",
+  "version": "1.0.0",
+  "description": "Analyze GitHub PR review activity, team performance rankings, and review bottlenecks using GraphQL & REST APIs",
+  "author": {
+    "name": "Kakeru Nakabachi",
+    "email": "baaaakkrad@gmail.com"
+  },
+  "homepage": "https://github.com/b4tchkn/claude-review-metrics",
+  "repository": "https://github.com/b4tchkn/claude-review-metrics",
+  "license": "Apache-2.0",
+  "keywords": [
+    "github",
+    "code-review",
+    "metrics",
+    "pr-analytics",
+    "team-performance",
+    "review-bottleneck"
+  ]
+}
