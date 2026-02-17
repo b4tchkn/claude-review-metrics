@@ -13,8 +13,6 @@ parse_args "$@"
 PERIOD_LABEL="Current State"
 
 NOW_TS=$(date +%s)
-THRESHOLD_24H=$((24 * 3600))
-THRESHOLD_5D=$((5 * 86400))
 
 echo "=========================================="
 echo "  Stuck PR Detection - Current State"
@@ -33,10 +31,9 @@ if [[ ! -s "$OPEN_PRS_FILE" ]]; then
 fi
 
 # Temp files for categorization
-WAITING_FILE=$(mktemp)
-CHANGES_REQ_FILE=$(mktemp)
-LONG_RUNNING_FILE=$(mktemp)
-trap "rm -f $WAITING_FILE $CHANGES_REQ_FILE $LONG_RUNNING_FILE $OPEN_PRS_FILE" EXIT
+WAITING_FILE=$(make_tmpfile)
+CHANGES_REQ_FILE=$(make_tmpfile)
+LONG_RUNNING_FILE=$(make_tmpfile)
 
 while IFS= read -r pr; do
   [[ -z "$pr" ]] && continue
@@ -52,34 +49,29 @@ while IFS= read -r pr; do
   age_seconds=$((NOW_TS - created_ts))
   idle_seconds=$((NOW_TS - updated_ts))
 
-  # Truncate title for display
   display_title="$title"
   if [[ ${#display_title} -gt 50 ]]; then
     display_title="${display_title:0:47}..."
   fi
 
-  # Get timeline events
   reviews=$(echo "$pr" | jq -c '[.timelineItems[] | select(.__typename == "PullRequestReview")]')
   review_requests=$(echo "$pr" | jq -c '[.timelineItems[] | select(.__typename == "ReviewRequestedEvent")]')
   commits=$(echo "$pr" | jq -c '[.timelineItems[] | select(.__typename == "PullRequestCommit")]')
 
-  # Check: Has review requests but no reviews yet (waiting for review > 24h)
   request_count=$(echo "$review_requests" | jq 'length')
   review_count=$(echo "$reviews" | jq 'length')
 
   if [[ $request_count -gt 0 && $review_count -eq 0 ]]; then
-    # Find earliest review request
     earliest_request=$(echo "$review_requests" | jq -r '[.[].createdAt] | sort | first')
     request_ts=$(iso_to_ts "$earliest_request")
     wait_seconds=$((NOW_TS - request_ts))
 
-    if [[ $wait_seconds -ge $THRESHOLD_24H ]]; then
+    if [[ $wait_seconds -ge $STUCK_REVIEW_THRESHOLD ]]; then
       pending_reviewers=$(echo "$pr" | jq -r '[.reviewRequests[] // empty] | join(", ")')
       echo "$wait_seconds|#$number|$author|$(format_duration $wait_seconds)|$pending_reviewers|$display_title" >> "$WAITING_FILE"
     fi
   fi
 
-  # Check: Changes Requested with no subsequent commit
   last_changes_requested=$(echo "$reviews" | jq -r '[.[] | select(.state == "CHANGES_REQUESTED") | .createdAt] | sort | last // empty')
   if [[ -n "$last_changes_requested" ]]; then
     cr_ts=$(iso_to_ts "$last_changes_requested")
@@ -102,8 +94,7 @@ while IFS= read -r pr; do
     fi
   fi
 
-  # Check: Long running PRs (> 5 days old)
-  if [[ $age_seconds -ge $THRESHOLD_5D ]]; then
+  if [[ $age_seconds -ge $STUCK_AGE_THRESHOLD ]]; then
     additions=$(echo "$pr" | jq -r '.additions // 0')
     deletions=$(echo "$pr" | jq -r '.deletions // 0')
     total_lines=$((additions + deletions))

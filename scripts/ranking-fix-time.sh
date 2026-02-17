@@ -17,9 +17,8 @@ START_DATE_SHORT="${START_DATE_DISPLAY}"
 END_DATE_SHORT="${END_DATE_DISPLAY}"
 
 # Temp files for accumulating data
-AUTHOR_DATA_FILE=$(mktemp)
-PR_DATA_FILE=$(mktemp)
-trap "rm -f $AUTHOR_DATA_FILE $PR_DATA_FILE" EXIT
+AUTHOR_DATA_FILE=$(make_tmpfile)
+PR_DATA_FILE=$(make_tmpfile)
 
 # Get PRs with review comments in the period
 prs=$(gh pr list --repo "$REPO" --state all --search "updated:${START_DATE_SHORT}..${END_DATE_SHORT}" --limit 200 --json number,title,author 2>/dev/null | \
@@ -56,7 +55,7 @@ for pr_number in $prs; do
     [[ "$comment_epoch" -eq 0 ]] && continue
 
     # Find next commit after comment
-    next_commit_epoch=99999999999
+    next_commit_epoch=$SENTINEL_EPOCH
 
     while read -r commit_line; do
       [[ -z "$commit_line" ]] || [[ "$commit_line" == "null" ]] && continue
@@ -68,16 +67,14 @@ for pr_number in $prs; do
       fi
     done <<< "$(echo "$commits" | jq -c '.[]')"
 
-    if [[ "$next_commit_epoch" -lt 99999999999 ]]; then
+    if [[ "$next_commit_epoch" -lt $SENTINEL_EPOCH ]]; then
       diff_seconds=$((next_commit_epoch - comment_epoch))
-      diff_hours=$((diff_seconds / 3600))
+      diff_hours=$((diff_seconds / SECONDS_PER_HOUR))
 
-      # Only count if fix is within 2 weeks (336 hours)
-      if [[ $diff_hours -lt 336 ]]; then
+      if [[ $diff_hours -lt $FIX_TIME_CAP_HOURS ]]; then
         pr_fixes=$((pr_fixes + 1))
         pr_total_seconds=$((pr_total_seconds + diff_seconds))
 
-        # Accumulate per author (append to file)
         echo "$pr_author $diff_seconds" >> "$AUTHOR_DATA_FILE"
 
         total_fixes=$((total_fixes + 1))
@@ -116,13 +113,11 @@ awk '
 END {
   for (a in author) {
     avg = author[a] / count[a]
-    avg_hours = int(avg / 3600)
-    avg_minutes = int((avg % 3600) / 60)
-    printf "%d|%s|%d|%dh %dm\n", avg, a, count[a], avg_hours, avg_minutes
+    printf "%d|%s|%d\n", avg, a, count[a]
   }
 }
-' "$AUTHOR_DATA_FILE" | sort -t'|' -k1 -n | head -3 | while IFS='|' read -r avg author count time; do
-  echo "  👤 $author: $time (${count} fixes)"
+' "$AUTHOR_DATA_FILE" | sort -t'|' -k1 -n | head -3 | while IFS='|' read -r avg author count; do
+  echo "  $author: $(format_duration $avg) (${count} fixes)"
 done
 
 echo ""
@@ -132,7 +127,5 @@ echo "| PR# | Author | Comments | Fixes | Avg Fix Time |"
 echo "|-----|--------|----------|-------|--------------|"
 
 while IFS='|' read -r pr_number author comments fixes avg_seconds; do
-  avg_hours=$((avg_seconds / 3600))
-  avg_minutes=$(((avg_seconds % 3600) / 60))
-  echo "| #$pr_number | $author | $comments | $fixes | ${avg_hours}h ${avg_minutes}m |"
+  echo "| #$pr_number | $author | $comments | $fixes | $(format_duration $avg_seconds) |"
 done < "$PR_DATA_FILE" | sort -t'|' -k5 -n

@@ -20,21 +20,35 @@ claude-review-metrics/
 │   └── review-metrics/
 │       └── SKILL.md             # Skill definition (arguments, invocation rules)
 ├── scripts/
+│   ├── dispatch.sh              # Unified entry point (routes commands to scripts)
 │   ├── collect-metrics.sh       # Combined output of all rankings
 │   ├── ranking-comments.sh      # Review comment count ranking
 │   ├── ranking-reviewed.sh      # Reviewed PR count ranking
 │   ├── ranking-approved.sh      # Approval count ranking
 │   ├── ranking-response-time.sh # Response time ranking
-│   ├── ranking-fix-time.sh      # Fix time ranking (standalone)
+│   ├── ranking-fix-time.sh      # Fix time ranking (standalone, uses REST API)
 │   ├── analysis-bottleneck.sh   # PR lifecycle phase breakdown
 │   ├── analysis-stuck-prs.sh    # Currently stuck PRs
 │   ├── analysis-reviewer-load.sh# Team review workload distribution
 │   ├── analysis-review-cycles.sh# Review round patterns
 │   ├── analysis-pr-size.sh      # PR size vs speed correlation
 │   └── lib/
-│       ├── common.sh            # Shared functions, constants, GraphQL queries
-│       ├── collect-data.sh      # Data collection for ranking scripts
-│       └── collect-data-extended.sh # Extended data collection for analysis scripts
+│       ├── common.sh            # Facade: sources all sub-modules below
+│       ├── constants.sh         # Named constants (thresholds, time values)
+│       ├── tmpfile.sh           # make_tmpfile(), cleanup_tmpfiles(), EXIT trap
+│       ├── args.sh              # parse_args(), is_bot(), EXCLUDED_BOTS
+│       ├── datetime.sh          # calculate_dates(), iso_to_ts(), timezone detection
+│       ├── format.sh            # print_header(), format_duration(), percentile(), classify_pr_size()
+│       ├── graphql.sh           # GraphQL queries + graphql_paginate()
+│       ├── collect-data.sh      # collect_data() for ranking scripts
+│       ├── collect-data-extended.sh # collect_extended_data(), collect_open_prs()
+│       ├── ranking-runner.sh    # run_ranking() shared boilerplate
+│       └── analysis-runner.sh   # run_analysis() shared boilerplate
+├── tests/
+│   ├── test-runner.sh           # Test framework (assert_eq, assert_contains, run_tests)
+│   ├── test-lib-functions.sh    # Unit tests for format, classify, percentile, is_bot, constants
+│   ├── test-tmpfile.sh          # Unit tests for tmpfile management
+│   └── test-dispatch.sh         # Unit tests for dispatch.sh routing
 ├── excluded-accounts.txt        # Bot accounts to exclude
 ├── CLAUDE.md                    # This file (development guide)
 ├── README.md                    # Plugin documentation
@@ -43,46 +57,50 @@ claude-review-metrics/
 
 ## Architecture
 
-### Shared Library (`lib/common.sh`)
+### Module System (`lib/`)
 
-Sourced by all scripts. Provides:
+`common.sh` is a facade that sources all sub-modules. Scripts only need `source lib/common.sh`.
 
-- `parse_args()` - Parses `-p <period>` / `--period=<period>` and repository argument
-- `calculate_dates()` - Computes `START_DATE` / `END_DATE` from period (week=Mon-Fri this week, last-week=Mon-Fri previous week, month=last 30 days)
-- `is_bot()` - Checks against `EXCLUDED_BOTS` array
-- `iso_to_ts()` - ISO8601 to Unix timestamp (supports both macOS `date -j` and Linux `date -d`)
-- `print_header()` - Standardized header output
-- `format_duration()` - Seconds to human-readable `Xd Xh Xm` format
-- `percentile()` - Calculate p50/p90/p95 from sorted values (awk)
-- `classify_pr_size()` - Classify line changes into XS/S/M/L/XL buckets
-- `GRAPHQL_QUERY` - GraphQL query for fetching PR review timeline and review data (used by ranking scripts)
-- `GRAPHQL_QUERY_EXTENDED` - Extended GraphQL query with full PR lifecycle data (createdAt, mergedAt, additions, deletions, changedFiles, isDraft, timeline events)
-- `GRAPHQL_QUERY_OPEN_PRS` - Open PR-only GraphQL query with `states: OPEN` filter
+| Module | Responsibility |
+|--------|---------------|
+| `constants.sh` | Named constants: `SECONDS_PER_DAY`, `FIX_TIME_CAP_HOURS`, `STUCK_*_THRESHOLD`, `SENTINEL_EPOCH`, `INSTANT_APPROVAL_THRESHOLD` |
+| `tmpfile.sh` | `make_tmpfile()` creates tracked temp files, `cleanup_tmpfiles()` removes them on EXIT via trap |
+| `args.sh` | `parse_args()` parses `-p <period>` and repo argument, `is_bot()` checks `EXCLUDED_BOTS` array |
+| `datetime.sh` | `calculate_dates()` computes date ranges, `iso_to_ts()` / `iso_to_utc_ts()` convert ISO8601 to timestamps, timezone detection |
+| `format.sh` | `print_header()`, `format_duration()`, `percentile()`, `classify_pr_size()` |
+| `graphql.sh` | Three GraphQL queries + `graphql_paginate()` generic pagination with callback |
 
-### Data Collection (`lib/collect-data.sh`)
+### Runners (`lib/ranking-runner.sh`, `lib/analysis-runner.sh`)
 
-Used by ranking scripts. `collect_data()` calls GraphQL API with pagination:
+Shared boilerplate for ranking and analysis scripts:
 
-- `METRICS_FILE` - Per-reviewer JSON: `{reviewedPRs, approvedPRs, comments}`
-- `RESPONSE_TIMES_FILE` - Per-reviewer JSON: `{totalSeconds, count}`
-- `PR_COUNT` - Total PRs processed
+- `run_ranking(title, render_fn, "$@")` — parse args, collect data, call render function
+- `run_analysis(title, analyze_fn, "$@")` — parse args, collect extended data, call analyze function
 
-### Extended Data Collection (`lib/collect-data-extended.sh`)
+### Data Collection
 
-Used by analysis scripts. Separate from `collect-data.sh` to avoid impacting existing ranking scripts.
+| Module | Used By | Function |
+|--------|---------|----------|
+| `collect-data.sh` | Ranking scripts | `collect_data()` → `METRICS_FILE`, `RESPONSE_TIMES_FILE` |
+| `collect-data-extended.sh` | Analysis scripts | `collect_extended_data()` → `PR_LIFECYCLE_FILE`, `collect_open_prs()` → `OPEN_PRS_FILE` |
 
-- `collect_extended_data()` - Fetches full PR lifecycle data as JSONL to `PR_LIFECYCLE_FILE`
-- `collect_open_prs()` - Fetches open PRs only to `OPEN_PRS_FILE` (used by stuck-prs)
+Both use `graphql_paginate()` for pagination and `make_tmpfile()` for temp file management.
+
+### Dispatch (`dispatch.sh`)
+
+Unified entry point that routes `[period] [command] [repo]` to the appropriate script.
 
 ### Ranking Scripts (`ranking-*.sh`)
 
-Top 3 rankings. Flow: source `lib/common.sh` → `parse_args` → `calculate_dates` → data collection → ranking output.
+Top 3 rankings. Each defines a `render_*()` function and calls `run_ranking()`.
 
-- `ranking-fix-time.sh` uses REST API (`pulls/{n}/comments`, `pulls/{n}/commits`), making 2-3 API calls per PR
+- Exception: `ranking-fix-time.sh` uses REST API directly (2-3 API calls per PR)
 
 ### Analysis Scripts (`analysis-*.sh`)
 
-Team-wide analysis. Flow: source `lib/common.sh` + `lib/collect-data-extended.sh` → `parse_args` → `calculate_dates` → extended data collection → analysis output.
+Team-wide analysis. Each defines an `analyze_*()` function and calls `run_analysis()`.
+
+- Exception: `analysis-stuck-prs.sh` uses `collect_open_prs()` directly (no period)
 
 | Script                      | Purpose                                                           | Uses Period?       |
 | --------------------------- | ----------------------------------------------------------------- | ------------------ |
@@ -116,14 +134,25 @@ Team-wide analysis. Flow: source `lib/common.sh` + `lib/collect-data-extended.sh
 | Review Rounds   | Count of changes-requested + 1 per merged PR                                  |
 | PR Size Buckets | XS (1-10), S (11-50), M (51-200), L (201-500), XL (500+) lines changed        |
 
+## Testing
+
+Run the test suite:
+
+```bash
+bash tests/test-runner.sh
+```
+
+Tests cover: `format_duration`, `classify_pr_size`, `percentile`, `is_bot`, constants, tmpfile management, and dispatch routing.
+
 ## Notes for Modification
 
 - All scripts use `set -euo pipefail` strict mode
-- Tmpfiles are cleaned up via `trap` on EXIT
+- All shebangs use `#!/usr/bin/env bash` for portability
+- Tmpfiles are managed via `make_tmpfile()` and automatically cleaned up on EXIT
 - macOS/Linux `date` command differences are handled by `iso_to_ts()`
-- GitHub API rate limits apply. `collect-data.sh` uses pagination (1 call per 100 PRs); `ranking-fix-time.sh` makes 2-3 API calls per PR; analysis scripts use `collect-data-extended.sh` (1 call per 100 PRs with richer fields)
-- To add a new ranking: create `ranking-*.sh`, add argument mapping in SKILL.md
-- To add a new analysis: create `analysis-*.sh`, add argument mapping in SKILL.md
+- GitHub API rate limits apply. Ranking scripts use 1 call per 100 PRs; `ranking-fix-time.sh` makes 2-3 API calls per PR; analysis scripts use 1 call per 100 PRs with richer fields
+- To add a new ranking: create `ranking-*.sh` with `run_ranking()`, add to `dispatch.sh` and SKILL.md
+- To add a new analysis: create `analysis-*.sh` with `run_analysis()`, add to `dispatch.sh` and SKILL.md
 - To add bot exclusions: edit `excluded-accounts.txt` at the repository root
 
 ## Dependencies

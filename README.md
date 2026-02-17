@@ -53,6 +53,18 @@ claude plugin add b4tchkn/claude-review-metrics
 - GitHub CLI (`gh`) installed and authenticated
 - `jq` for JSON processing
 
+## Development
+
+### Running Tests
+
+```bash
+bash tests/test-runner.sh
+```
+
+### Project Structure
+
+Scripts are organized into modular libraries under `scripts/lib/`. See [CLAUDE.md](CLAUDE.md) for the full architecture guide.
+
 ## License
 
 Apache License 2.0
