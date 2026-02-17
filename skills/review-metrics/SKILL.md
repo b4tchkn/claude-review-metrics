@@ -29,43 +29,29 @@ Collect and analyze team review metrics from GitHub pull requests.
 
 ## Invocation
 
-Based on the arguments, run the appropriate script:
+Run via the unified dispatch script:
 
-### All Rankings (default)
 ```bash
-./scripts/collect-metrics.sh -p $0
+./scripts/dispatch.sh $0 $1
 ```
 
-### Individual Rankings
-- `$1 = comments` → `./scripts/ranking-comments.sh -p $0`
-- `$1 = reviewed` → `./scripts/ranking-reviewed.sh -p $0`
-- `$1 = approved` → `./scripts/ranking-approved.sh -p $0`
-- `$1 = response-time` → `./scripts/ranking-response-time.sh -p $0`
-- `$1 = fix-time` → `./scripts/ranking-fix-time.sh -p $0`
-
-### Analysis Scripts
-- `$1 = bottleneck` → `./scripts/analysis-bottleneck.sh -p $0`
-- `$1 = stuck` → `./scripts/analysis-stuck-prs.sh` (no period argument)
-- `$1 = reviewer-load` → `./scripts/analysis-reviewer-load.sh -p $0`
-- `$1 = cycles` → `./scripts/analysis-review-cycles.sh -p $0`
-- `$1 = pr-size` → `./scripts/analysis-pr-size.sh -p $0`
-
-If no period argument ($0) is provided, default to `week`.
+Where `$0` is the period (default: `week`) and `$1` is the command.
+If no command is provided, all rankings are shown.
 
 ## Examples
 
-| Command | Script |
-|---------|--------|
-| `/review-metrics` | `./scripts/collect-metrics.sh -p week` |
-| `/review-metrics last-week` | `./scripts/collect-metrics.sh -p last-week` |
-| `/review-metrics month comments` | `./scripts/ranking-comments.sh -p month` |
-| `/review-metrics last-week response-time` | `./scripts/ranking-response-time.sh -p last-week` |
-| `/review-metrics last-week fix-time` | `./scripts/ranking-fix-time.sh -p last-week` |
-| `/review-metrics last-week bottleneck` | `./scripts/analysis-bottleneck.sh -p last-week` |
-| `/review-metrics stuck` | `./scripts/analysis-stuck-prs.sh` |
-| `/review-metrics last-week reviewer-load` | `./scripts/analysis-reviewer-load.sh -p last-week` |
-| `/review-metrics last-week cycles` | `./scripts/analysis-review-cycles.sh -p last-week` |
-| `/review-metrics last-week pr-size` | `./scripts/analysis-pr-size.sh -p last-week` |
+| Command | Dispatch |
+|---------|----------|
+| `/review-metrics` | `./scripts/dispatch.sh week` |
+| `/review-metrics last-week` | `./scripts/dispatch.sh last-week` |
+| `/review-metrics month comments` | `./scripts/dispatch.sh month comments` |
+| `/review-metrics last-week response-time` | `./scripts/dispatch.sh last-week response-time` |
+| `/review-metrics last-week fix-time` | `./scripts/dispatch.sh last-week fix-time` |
+| `/review-metrics last-week bottleneck` | `./scripts/dispatch.sh last-week bottleneck` |
+| `/review-metrics stuck` | `./scripts/dispatch.sh week stuck` |
+| `/review-metrics last-week reviewer-load` | `./scripts/dispatch.sh last-week reviewer-load` |
+| `/review-metrics last-week cycles` | `./scripts/dispatch.sh last-week cycles` |
+| `/review-metrics last-week pr-size` | `./scripts/dispatch.sh last-week pr-size` |
 
 ## Available Scripts
 

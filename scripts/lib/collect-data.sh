@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Collect review data from GitHub API
 # Outputs JSON data to METRICS_FILE and RESPONSE_TIMES_FILE
 
@@ -6,21 +6,18 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
 
 collect_data() {
-  METRICS_FILE=$(mktemp)
-  RESPONSE_TIMES_FILE=$(mktemp)
+  METRICS_FILE=$(make_tmpfile)
+  RESPONSE_TIMES_FILE=$(make_tmpfile)
   echo "{}" > "$METRICS_FILE"
   echo "{}" > "$RESPONSE_TIMES_FILE"
 
-  CURSOR=""
-  HAS_NEXT="true"
   PR_COUNT=0
 
-  while [[ "$HAS_NEXT" == "true" ]]; do
-    RESULT=$(gh api graphql -f query="$GRAPHQL_QUERY" -F owner="$OWNER" -F repo="$REPO_NAME" ${CURSOR:+-F cursor="$CURSOR"} 2>/dev/null)
+  _collect_data_page() {
+    local RESULT
+    RESULT=$(cat)
 
-    HAS_NEXT=$(echo "$RESULT" | jq -r '.data.repository.pullRequests.pageInfo.hasNextPage')
-    CURSOR=$(echo "$RESULT" | jq -r '.data.repository.pullRequests.pageInfo.endCursor')
-
+    local PR_DATA
     PR_DATA=$(echo "$RESULT" | jq -c '.data.repository.pullRequests.nodes[]')
 
     while IFS= read -r pr; do
@@ -30,8 +27,7 @@ collect_data() {
       PR_NUM=$(echo "$pr" | jq -r '.number')
 
       if [[ "$PR_UPDATED" < "$START_DATE" ]]; then
-        HAS_NEXT="false"
-        break
+        return 1  # Signal early exit to graphql_paginate
       fi
 
       ((PR_COUNT++)) || true
@@ -79,7 +75,9 @@ collect_data() {
         echo "$UPDATED" > "$METRICS_FILE"
       done
     done <<< "$PR_DATA"
-  done
+  }
+
+  graphql_paginate "$GRAPHQL_QUERY" "$OWNER" "$REPO_NAME" _collect_data_page
 
   export METRICS_FILE RESPONSE_TIMES_FILE PR_COUNT
 }

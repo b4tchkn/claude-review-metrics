@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Review Metrics Collection Script - All Rankings
 # Usage: ./collect-metrics.sh [OPTIONS] [REPO]
 # Options:
@@ -35,7 +35,6 @@ RESPONSE_TIMES=$(cat "$RESPONSE_TIMES_FILE")
 
 if [[ "$METRICS" == "{}" ]]; then
   echo "No review activity this period."
-  rm -f "$METRICS_FILE" "$RESPONSE_TIMES_FILE"
   exit 0
 fi
 
@@ -73,5 +72,3 @@ if [[ "$RESPONSE_TIMES" != "{}" ]]; then
 fi
 
 # Note: For fix time ranking, run: ./ranking-fix-time.sh -p $PERIOD
-
-rm -f "$METRICS_FILE" "$RESPONSE_TIMES_FILE"
