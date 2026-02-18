@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://github.com/b4tchkn/claude-review-metrics">
-    <img src="https://github.com/b4tchkn/claude-review-metrics/raw/main/art/logo.png" width="480px" alt="claude_review_metrics" />
+    <img src="https://github.com/b4tchkn/claude-review-metrics/raw/main/art/logo.png" width="720px" alt="claude_review_metrics" />
   </a>
 </div>
 
