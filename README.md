@@ -1,4 +1,8 @@
-# Review Metrics
+<div align="center">
+  <a href="https://github.com/b4tchkn/claude-review-metrics">
+    <img src="https://github.com/b4tchkn/claude-review-metrics/raw/main/art/logo.png" width="480px" alt="claude_review_metrics" />
+  </a>
+</div>
 
 A Claude Code plugin that analyzes GitHub PR review activity, team performance rankings, and review bottlenecks.
 
@@ -26,31 +30,31 @@ claude plugin add b4tchkn/claude-review-metrics
 
 ### Rankings (Top 3)
 
-| Command | Description |
-|---------|-------------|
-| `comments` | Review comment count |
-| `reviewed` | Reviewed PR count |
-| `approved` | Approval count |
-| `response-time` | Avg time from review request to first review |
-| `fix-time` | Avg time from review comment to next commit (capped at 2 weeks) |
+| Command         | Description                                                     |
+| --------------- | --------------------------------------------------------------- |
+| `comments`      | Review comment count                                            |
+| `reviewed`      | Reviewed PR count                                               |
+| `approved`      | Approval count                                                  |
+| `response-time` | Avg time from review request to first review                    |
+| `fix-time`      | Avg time from review comment to next commit (capped at 2 weeks) |
 
 ### Analysis (Team-wide)
 
-| Command | Description |
-|---------|-------------|
-| `bottleneck` | PR lifecycle phase breakdown (wait/review/merge) with Avg, p50, p90 and actionable suggestions |
-| `stuck` | Open PRs needing immediate attention (ignores period, always shows current state) |
-| `reviewer-load` | Team review workload distribution with load balance warnings |
-| `cycles` | Review round counts, change-request patterns, and high-cycle PR detection |
-| `pr-size` | PR size (XS/S/M/L/XL) vs review speed correlation |
+| Command         | Description                                                                                    |
+| --------------- | ---------------------------------------------------------------------------------------------- |
+| `bottleneck`    | PR lifecycle phase breakdown (wait/review/merge) with Avg, p50, p90 and actionable suggestions |
+| `stuck`         | Open PRs needing immediate attention (ignores period, always shows current state)              |
+| `reviewer-load` | Team review workload distribution with load balance warnings                                   |
+| `cycles`        | Review round counts, change-request patterns, and high-cycle PR detection                      |
+| `pr-size`       | PR size (XS/S/M/L/XL) vs review speed correlation                                              |
 
 ### Period Options
 
-| Period | Description |
-|--------|-------------|
-| `week` | Current week (Mon-Fri) - default |
-| `last-week` | Previous week (Mon-Fri) |
-| `month` | Last 30 days |
+| Period      | Description                      |
+| ----------- | -------------------------------- |
+| `week`      | Current week (Mon-Fri) - default |
+| `last-week` | Previous week (Mon-Fri)          |
+| `month`     | Last 30 days                     |
 
 ## How It Works
 
@@ -63,15 +67,15 @@ claude plugin add b4tchkn/claude-review-metrics
 
 ### Metrics Definitions
 
-| Metric | Definition |
-|--------|-----------|
-| Response Time | Time from `ReviewRequestedEvent` to first `PullRequestReview` by that reviewer |
-| Fix Time | Time from review comment to next commit (capped at 336 hours / 2 weeks) |
-| Wait for Review | Time from PR creation (or `ReadyForReviewEvent`) to first review |
-| Review Cycles | Time from first review to last approval |
-| Merge Delay | Time from last approval to merge |
-| Review Rounds | `changes_requested_count + 1` (if approved) |
-| PR Size | Total changed lines: XS (1-10), S (11-50), M (51-200), L (201-500), XL (500+) |
+| Metric          | Definition                                                                     |
+| --------------- | ------------------------------------------------------------------------------ |
+| Response Time   | Time from `ReviewRequestedEvent` to first `PullRequestReview` by that reviewer |
+| Fix Time        | Time from review comment to next commit (capped at 336 hours / 2 weeks)        |
+| Wait for Review | Time from PR creation (or `ReadyForReviewEvent`) to first review               |
+| Review Cycles   | Time from first review to last approval                                        |
+| Merge Delay     | Time from last approval to merge                                               |
+| Review Rounds   | `changes_requested_count + 1` (if approved)                                    |
+| PR Size         | Total changed lines: XS (1-10), S (11-50), M (51-200), L (201-500), XL (500+)  |
 
 ### Bot Filtering
 
