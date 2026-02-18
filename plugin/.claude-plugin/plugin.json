@@ -1,6 +1,6 @@
 {
   "name": "claude-review-metrics",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "Analyze GitHub PR review activity, team performance rankings, and review bottlenecks using GraphQL & REST APIs",
   "author": {
     "name": "Kakeru Nakabachi",
