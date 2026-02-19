@@ -4,14 +4,14 @@
     "name": "Kakeru Nakabachi"
   },
   "metadata": {
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Plugins by Kakeru Nakabachi (b4tchkn)",
     "homepage": "https://github.com/b4tchkn/claude-review-metrics"
   },
   "plugins": [
     {
       "name": "claude-review-metrics",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "source": "./plugin",
       "description": "Analyze GitHub PR review activity, team performance rankings, and review bottlenecks"
     }
