@@ -8,7 +8,7 @@ Analyze GitHub PR review activity, team performance rankings, and review bottlen
 - Uses GitHub GraphQL API + REST API to collect review data
 - **Rankings** (Top 3): comments, reviewed PRs, approved PRs, response time, fix time
 - **Analysis** (Team-wide): bottleneck detection, stuck PRs, reviewer load, review cycles, PR size correlation
-- Bot accounts automatically excluded (configure via `excluded-accounts.txt`)
+- Bot accounts excluded via `.review-metrics-exclude` in repository root (optional)
 
 ## Directory Structure
 
@@ -49,7 +49,6 @@ claude-review-metrics/
 │   ├── test-lib-functions.sh    # Unit tests for format, classify, percentile, is_bot, constants
 │   ├── test-tmpfile.sh          # Unit tests for tmpfile management
 │   └── test-dispatch.sh         # Unit tests for dispatch.sh routing
-├── excluded-accounts.txt        # Bot accounts to exclude
 ├── CLAUDE.md                    # This file (development guide)
 ├── README.md                    # Plugin documentation
 └── LICENSE                      # Apache 2.0
@@ -65,7 +64,7 @@ claude-review-metrics/
 |--------|---------------|
 | `constants.sh` | Named constants: `SECONDS_PER_DAY`, `FIX_TIME_CAP_HOURS`, `STUCK_*_THRESHOLD`, `SENTINEL_EPOCH`, `INSTANT_APPROVAL_THRESHOLD` |
 | `tmpfile.sh` | `make_tmpfile()` creates tracked temp files, `cleanup_tmpfiles()` removes them on EXIT via trap |
-| `args.sh` | `parse_args()` parses `-p <period>` and repo argument, `is_bot()` checks `EXCLUDED_BOTS` array |
+| `args.sh` | `parse_args()` parses `-p <period>` and repo argument, `is_bot()` checks `EXCLUDED_BOTS` loaded from `.review-metrics-exclude` |
 | `datetime.sh` | `calculate_dates()` computes date ranges, `iso_to_ts()` / `iso_to_utc_ts()` convert ISO8601 to timestamps, timezone detection |
 | `format.sh` | `print_header()`, `format_duration()`, `percentile()`, `classify_pr_size()` |
 | `graphql.sh` | Three GraphQL queries + `graphql_paginate()` generic pagination with callback |
@@ -153,7 +152,7 @@ Tests cover: `format_duration`, `classify_pr_size`, `percentile`, `is_bot`, cons
 - GitHub API rate limits apply. Ranking scripts use 1 call per 100 PRs; `ranking-fix-time.sh` makes 2-3 API calls per PR; analysis scripts use 1 call per 100 PRs with richer fields
 - To add a new ranking: create `ranking-*.sh` with `run_ranking()`, add to `dispatch.sh` and SKILL.md
 - To add a new analysis: create `analysis-*.sh` with `run_analysis()`, add to `dispatch.sh` and SKILL.md
-- To add bot exclusions: edit `excluded-accounts.txt` in the plugin directory
+- To exclude bot accounts: create `.review-metrics-exclude` in the repository root (one account per line, `#` for comments)
 
 ## Dependencies
 

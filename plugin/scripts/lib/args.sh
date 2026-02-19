@@ -5,9 +5,11 @@
 EXCLUDED_BOTS=()
 
 _load_excluded_bots() {
-  local _common_dir
-  _common_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  local config_file="$_common_dir/../../excluded-accounts.txt"
+  local repo_root
+  repo_root="$(git rev-parse --show-toplevel 2>/dev/null || echo '')"
+  [[ -z "$repo_root" ]] && return
+
+  local config_file="$repo_root/.review-metrics-exclude"
   [[ ! -f "$config_file" ]] && return
 
   while IFS= read -r line; do
