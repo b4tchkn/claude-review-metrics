@@ -79,7 +79,16 @@ claude plugin add b4tchkn/claude-review-metrics
 
 ### Bot Filtering
 
-Bot accounts listed in `plugin/excluded-accounts.txt` are automatically excluded from all metrics. Currently excludes `github-actions`. Add one account name per line to customize.
+Create a `.review-metrics-exclude` file in your repository root to exclude bot accounts from all metrics. If the file does not exist, no accounts are excluded.
+
+```
+# .review-metrics-exclude
+github-actions
+renovate[bot]
+dependabot[bot]
+```
+
+Format: one account per line. Lines starting with `#` are comments.
 
 ## Requirements
 
@@ -126,7 +135,6 @@ plugin/
 │   ├── test-lib-functions.sh    # Unit tests for library functions
 │   ├── test-dispatch.sh         # Dispatch routing tests
 │   └── test-tmpfile.sh          # Temp file management tests
-├── excluded-accounts.txt        # Bot account exclusions
 └── CLAUDE.md                    # Detailed architecture guide
 ```
 

@@ -15,7 +15,6 @@ claude-review-metrics/
 │   ├── scripts/                 # Shell scripts
 │   ├── skills/                  # Skill definitions
 │   ├── tests/                   # Test suite
-│   ├── excluded-accounts.txt    # Bot account exclusions
 │   └── CLAUDE.md                # Full architecture guide
 ├── README.md
 └── LICENSE
@@ -27,4 +26,4 @@ See [plugin/CLAUDE.md](plugin/CLAUDE.md) for the full architecture guide, module
 
 - Run tests: `bash plugin/tests/test-runner.sh`
 - Plugin entry point: `plugin/scripts/dispatch.sh`
-- Bot exclusions: `plugin/excluded-accounts.txt`
+- Bot exclusions: `.review-metrics-exclude` (in repository root)
