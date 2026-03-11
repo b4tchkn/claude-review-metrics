@@ -47,6 +47,7 @@ claude-review-metrics/
 ├── tests/
 │   ├── test-runner.sh           # Test framework (assert_eq, assert_contains, run_tests)
 │   ├── test-lib-functions.sh    # Unit tests for format, classify, percentile, is_bot, constants
+│   ├── test-graph-functions.sh   # Unit tests for graph visualization functions
 │   ├── test-tmpfile.sh          # Unit tests for tmpfile management
 │   └── test-dispatch.sh         # Unit tests for dispatch.sh routing
 ├── CLAUDE.md                    # This file (development guide)
@@ -62,11 +63,11 @@ claude-review-metrics/
 
 | Module | Responsibility |
 |--------|---------------|
-| `constants.sh` | Named constants: `SECONDS_PER_DAY`, `FIX_TIME_CAP_HOURS`, `STUCK_*_THRESHOLD`, `SENTINEL_EPOCH`, `INSTANT_APPROVAL_THRESHOLD` |
+| `constants.sh` | Named constants: `SECONDS_PER_DAY`, `FIX_TIME_CAP_HOURS`, `STUCK_*_THRESHOLD`, `SENTINEL_EPOCH`, `INSTANT_APPROVAL_THRESHOLD`, `GRAPH_BAR_WIDTH` |
 | `tmpfile.sh` | `make_tmpfile()` creates tracked temp files, `cleanup_tmpfiles()` removes them on EXIT via trap |
 | `args.sh` | `parse_args()` parses `-p <period>` and repo argument, `is_bot()` checks `EXCLUDED_BOTS` loaded from `.review-metrics-exclude` |
 | `datetime.sh` | `calculate_dates()` computes date ranges, `iso_to_ts()` / `iso_to_utc_ts()` convert ISO8601 to timestamps, timezone detection |
-| `format.sh` | `print_header()`, `format_duration()`, `percentile()`, `classify_pr_size()` |
+| `format.sh` | `print_header()`, `format_duration()`, `percentile()`, `classify_pr_size()`, `graph_bar()`, `graph_stacked_bar()`, `graph_sparkline()` |
 | `graphql.sh` | Three GraphQL queries + `graphql_paginate()` generic pagination with callback |
 
 ### Runners (`lib/ranking-runner.sh`, `lib/analysis-runner.sh`)
@@ -141,7 +142,7 @@ Run the test suite:
 bash tests/test-runner.sh
 ```
 
-Tests cover: `format_duration`, `classify_pr_size`, `percentile`, `is_bot`, constants, tmpfile management, and dispatch routing.
+Tests cover: `format_duration`, `classify_pr_size`, `percentile`, `is_bot`, constants, graph functions (`graph_bar`, `graph_stacked_bar`, `graph_sparkline`), tmpfile management, and dispatch routing.
 
 ## Notes for Modification
 

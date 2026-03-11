@@ -105,6 +105,7 @@ fi
 echo "========== Avg Fix Time by Author (top 3) =========="
 echo ""
 
+FIX_TIME_TOP_FILE=$(make_tmpfile)
 awk '
 {
   author[$1] += $2
@@ -116,9 +117,12 @@ END {
     printf "%d|%s|%d\n", avg, a, count[a]
   }
 }
-' "$AUTHOR_DATA_FILE" | sort -t'|' -k1 -n | head -3 | while IFS='|' read -r avg author count; do
-  echo "  $author: $(format_duration $avg) (${count} fixes)"
-done
+' "$AUTHOR_DATA_FILE" | sort -t'|' -k1 -n | head -3 > "$FIX_TIME_TOP_FILE"
+
+fix_max_val=$(tail -1 "$FIX_TIME_TOP_FILE" | cut -d'|' -f1)
+while IFS='|' read -r avg author count; do
+  printf "  %-12s %s %s (%s fixes)\n" "$author" "$(graph_bar "$avg" "$fix_max_val")" "$(format_duration $avg)" "$count"
+done < "$FIX_TIME_TOP_FILE"
 
 echo ""
 echo "========== Per-PR Details =========="

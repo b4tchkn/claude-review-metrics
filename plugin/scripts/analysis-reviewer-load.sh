@@ -75,8 +75,8 @@ analyze_reviewer_load() {
 
   echo "[Team Review Load]"
   echo ""
-  printf "  %-20s %10s %10s %8s %14s %8s\n" "Reviewer" "Requested" "Completed" "Rate" "Avg Response" "Pending"
-  printf "  %-20s %10s %10s %8s %14s %8s\n" "--------" "---------" "---------" "----" "------------" "-------"
+  printf "  %-20s %10s %10s %8s %-10s %14s %8s\n" "Reviewer" "Requested" "Completed" "Rate" "" "Avg Response" "Pending"
+  printf "  %-20s %10s %10s %8s %-10s %14s %8s\n" "--------" "---------" "---------" "----" "----------" "------------" "-------"
 
   total_completed=0
   REVIEWER_COMPLETED_FILE=$(make_tmpfile)
@@ -105,7 +105,12 @@ analyze_reviewer_load() {
       fi
     fi
 
-    printf "  %-20s %10d %10d %8s %14s %8d\n" "$reviewer" "$requested" "$completed" "$rate" "$avg_response" "$pending"
+    local sparkline=""
+    if [[ $requested -gt 0 ]]; then
+      local rate_pct=$((completed * 100 / requested))
+      sparkline=$(graph_sparkline "$rate_pct")
+    fi
+    printf "  %-20s %10d %10d %8s %s %14s %8d\n" "$reviewer" "$requested" "$completed" "$rate" "$sparkline" "$avg_response" "$pending"
 
     total_completed=$((total_completed + completed))
     echo "$completed $reviewer" >> "$REVIEWER_COMPLETED_FILE"
