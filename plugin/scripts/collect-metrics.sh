@@ -74,7 +74,6 @@ render_ranking "$(echo "$METRICS" | jq -r '
 if [[ "$RESPONSE_TIMES" != "{}" ]]; then
   echo ""
   echo "[Avg Response Time] (fastest)"
-  local rt_data rt_max
   rt_data=$(echo "$RESPONSE_TIMES" | jq -r '
     to_entries |
     map(select(.value.count > 0)) |
@@ -91,8 +90,8 @@ if [[ "$RESPONSE_TIMES" != "{}" ]]; then
   rt_max=$(echo "$rt_data" | tail -1 | cut -f3)
   while IFS=$'\t' read -r rank name seconds count; do
     [[ -z "$rank" ]] && continue
-    local hours=$((seconds / 3600))
-    local minutes=$(((seconds % 3600) / 60))
+    hours=$((seconds / 3600))
+    minutes=$(((seconds % 3600) / 60))
     printf "  %s. %-12s %s %dh %dm (%s reviews)\n" "$rank" "$name" "$(graph_bar "$seconds" "$rt_max")" "$hours" "$minutes" "$count"
   done <<< "$rt_data"
 fi
