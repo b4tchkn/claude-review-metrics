@@ -60,3 +60,89 @@ classify_pr_size() {
     echo "XL"
   fi
 }
+
+# Horizontal bar graph: █ filled, ░ empty
+# Usage: graph_bar <value> <max_value> [width]
+graph_bar() {
+  local value=$1 max_value=$2 width=${3:-$GRAPH_BAR_WIDTH}
+  local filled=0
+
+  if [[ $max_value -gt 0 && $value -gt 0 ]]; then
+    filled=$((value * width / max_value))
+    [[ $filled -eq 0 ]] && filled=1
+    [[ $filled -gt $width ]] && filled=$width
+  fi
+
+  local empty=$((width - filled))
+  local bar=""
+  local i
+  for ((i = 0; i < filled; i++)); do bar+="█"; done
+  for ((i = 0; i < empty; i++)); do bar+="░"; done
+  printf '%s' "$bar"
+}
+
+# Stacked bar graph: █ phase1, ▓ phase2, ░ phase3
+# Usage: graph_stacked_bar <val1> <val2> <val3> [width]
+graph_stacked_bar() {
+  local val1=$1 val2=$2 val3=$3 width=${4:-$GRAPH_BAR_WIDTH}
+  local total=$((val1 + val2 + val3))
+
+  if [[ $total -le 0 ]]; then
+    local bar=""
+    local i
+    for ((i = 0; i < width; i++)); do bar+="░"; done
+    printf '%s' "$bar"
+    return
+  fi
+
+  local seg1=$((val1 * width / total))
+  local seg2=$((val2 * width / total))
+  local seg3=$((width - seg1 - seg2))
+
+  # Ensure non-zero values get at least 1 character
+  if [[ $val1 -gt 0 && $seg1 -eq 0 ]]; then
+    seg1=1
+    if [[ $seg3 -gt 1 ]]; then seg3=$((seg3 - 1))
+    elif [[ $seg2 -gt 1 ]]; then seg2=$((seg2 - 1))
+    fi
+  fi
+  if [[ $val2 -gt 0 && $seg2 -eq 0 ]]; then
+    seg2=1
+    if [[ $seg3 -gt 1 ]]; then seg3=$((seg3 - 1))
+    elif [[ $seg1 -gt 1 ]]; then seg1=$((seg1 - 1))
+    fi
+  fi
+  if [[ $val3 -gt 0 && $seg3 -eq 0 ]]; then
+    seg3=1
+    if [[ $seg1 -gt 1 ]]; then seg1=$((seg1 - 1))
+    elif [[ $seg2 -gt 1 ]]; then seg2=$((seg2 - 1))
+    fi
+  fi
+
+  local bar=""
+  local i
+  for ((i = 0; i < seg1; i++)); do bar+="█"; done
+  for ((i = 0; i < seg2; i++)); do bar+="▓"; done
+  for ((i = 0; i < seg3; i++)); do bar+="░"; done
+  printf '%s' "$bar"
+}
+
+# Sparkline percentage bar: ▰ filled, ▱ empty
+# Usage: graph_sparkline <percentage> [width]
+graph_sparkline() {
+  local pct=$1 width=${2:-10}
+  local filled=0
+
+  if [[ $pct -gt 0 ]]; then
+    filled=$((pct * width / 100))
+    [[ $filled -eq 0 ]] && filled=1
+    [[ $filled -gt $width ]] && filled=$width
+  fi
+
+  local empty=$((width - filled))
+  local bar=""
+  local i
+  for ((i = 0; i < filled; i++)); do bar+="▰"; done
+  for ((i = 0; i < empty; i++)); do bar+="▱"; done
+  printf '%s' "$bar"
+}

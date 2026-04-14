@@ -40,35 +40,61 @@ fi
 
 echo "========== Rankings =========="
 
+render_ranking() {
+  local data max_val
+  data=$1
+  max_val=$(echo "$data" | head -1 | cut -f3)
+  while IFS=$'\t' read -r rank name value; do
+    [[ -z "$rank" ]] && continue
+    printf "  %s. %-12s %s %s\n" "$rank" "$name" "$(graph_bar "$value" "$max_val")" "$value"
+  done <<< "$data"
+}
+
 echo ""
 echo "[Review Comments] (top contributors)"
-echo "$METRICS" | jq -r 'to_entries | sort_by(-.value.comments) | .[0:3] | to_entries | .[] | "  \(.key + 1). \(.value.key): \(.value.value.comments)"'
+render_ranking "$(echo "$METRICS" | jq -r '
+  to_entries | sort_by(-.value.comments) | .[0:3] |
+  to_entries | .[] |
+  "\(.key + 1)\t\(.value.key)\t\(.value.value.comments)"')"
 
 echo ""
 echo "[Reviewed PRs] (most active)"
-echo "$METRICS" | jq -r 'to_entries | sort_by(-(.value.reviewedPRs | length)) | .[0:3] | to_entries | .[] | "  \(.key + 1). \(.value.key): \(.value.value.reviewedPRs | length)"'
+render_ranking "$(echo "$METRICS" | jq -r '
+  to_entries | sort_by(-(.value.reviewedPRs | length)) | .[0:3] |
+  to_entries | .[] |
+  "\(.key + 1)\t\(.value.key)\t\(.value.value.reviewedPRs | length)"')"
 
 echo ""
 echo "[Approved PRs] (most approvals)"
-echo "$METRICS" | jq -r 'to_entries | sort_by(-(.value.approvedPRs | length)) | .[0:3] | to_entries | .[] | "  \(.key + 1). \(.value.key): \(.value.value.approvedPRs | length)"'
+render_ranking "$(echo "$METRICS" | jq -r '
+  to_entries | sort_by(-(.value.approvedPRs | length)) | .[0:3] |
+  to_entries | .[] |
+  "\(.key + 1)\t\(.value.key)\t\(.value.value.approvedPRs | length)"')"
 
 if [[ "$RESPONSE_TIMES" != "{}" ]]; then
   echo ""
   echo "[Avg Response Time] (fastest)"
-  echo "$RESPONSE_TIMES" | jq -r '
+  local rt_data rt_max
+  rt_data=$(echo "$RESPONSE_TIMES" | jq -r '
     to_entries |
     map(select(.value.count > 0)) |
     map({
       key: .key,
-      avgSeconds: (.value.totalSeconds / .value.count),
+      avgSeconds: ((.value.totalSeconds / .value.count) | floor),
       count: .value.count
     }) |
     sort_by(.avgSeconds) |
     .[0:3] |
     to_entries |
     .[] |
-    "  \(.key + 1). \(.value.key): \((.value.avgSeconds / 3600) | floor)h \(((.value.avgSeconds % 3600) / 60) | floor)m (\(.value.count) reviews)"
-  '
+    "\(.key + 1)\t\(.value.key)\t\(.value.avgSeconds)\t\(.value.count)"')
+  rt_max=$(echo "$rt_data" | tail -1 | cut -f3)
+  while IFS=$'\t' read -r rank name seconds count; do
+    [[ -z "$rank" ]] && continue
+    local hours=$((seconds / 3600))
+    local minutes=$(((seconds % 3600) / 60))
+    printf "  %s. %-12s %s %dh %dm (%s reviews)\n" "$rank" "$name" "$(graph_bar "$seconds" "$rt_max")" "$hours" "$minutes" "$count"
+  done <<< "$rt_data"
 fi
 
 # Note: For fix time ranking, run: ./ranking-fix-time.sh -p $PERIOD

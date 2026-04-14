@@ -186,6 +186,14 @@ analyze_bottleneck() {
 
   echo ""
 
+  # Stacked bar for phase proportions
+  if [[ ${wait_avg_val:-0} -gt 0 || ${review_avg_val:-0} -gt 0 || ${merge_avg_val:-0} -gt 0 ]]; then
+    echo "  Phase proportion:"
+    echo "  $(graph_stacked_bar "${wait_avg_val:-0}" "${review_avg_val:-0}" "${merge_avg_val:-0}")"
+    echo "  █ Wait for Review  ▓ Review Cycles  ░ Merge Delay"
+    echo ""
+  fi
+
   if [[ -n "$total_avg_val" && "$total_avg_val" -gt 0 ]]; then
     echo "[Bottleneck Identification]"
     echo ""

@@ -18,3 +18,6 @@ STUCK_AGE_THRESHOLD=$((5 * SECONDS_PER_DAY))         # 5 days
 
 # Bottleneck: instant approval threshold (seconds)
 INSTANT_APPROVAL_THRESHOLD=300  # 5 minutes
+
+# Graph display width (characters)
+GRAPH_BAR_WIDTH=40

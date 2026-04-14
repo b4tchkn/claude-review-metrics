@@ -63,16 +63,26 @@ analyze_pr_size() {
 
   echo "[PR Size Distribution] ($analyzed_count merged PRs)"
   echo ""
-  printf "  %-6s %8s %6s %15s %12s %12s\n" "Size" "Lines" "Count" "Avg Cycle Time" "Avg Rounds" "Slow cases"
-  printf "  %-6s %8s %6s %15s %12s %12s\n" "----" "-----" "-----" "--------------" "----------" "----------"
+  printf "  %-6s %8s %6s %15s %-20s %12s %12s\n" "Size" "Lines" "Count" "Avg Cycle Time" "" "Avg Rounds" "Slow cases"
+  printf "  %-6s %8s %6s %15s %-20s %12s %12s\n" "----" "-----" "-----" "--------------" "--------------------" "----------" "----------"
+
+  calc_bucket_avg() {
+    local file=$1
+    if [[ ! -s "$file" ]]; then
+      echo "0"
+      return
+    fi
+    awk '{ sum += $1; n++ } END { if(n>0) print int(sum/n); else print 0 }' "$file"
+  }
 
   display_bucket() {
     local label=$1
     local range=$2
     local file=$3
+    local max_cycle=${4:-0}
 
     if [[ ! -s "$file" ]]; then
-      printf "  %-6s %8s %6d %15s %12s %12s\n" "$label" "$range" "0" "-" "-" "-"
+      printf "  %-6s %8s %6d %15s %-20s %12s %12s\n" "$label" "$range" "0" "-" "" "-" "-"
       return
     fi
 
@@ -80,7 +90,7 @@ analyze_pr_size() {
     count=$(wc -l < "$file" | tr -d ' ')
 
     local avg_cycle
-    avg_cycle=$(awk '{ sum += $1; n++ } END { if(n>0) print int(sum/n); else print 0 }' "$file")
+    avg_cycle=$(calc_bucket_avg "$file")
 
     local avg_rounds
     avg_rounds=$(awk '{ sum += $2; n++ } END { if(n>0) printf "%.1f", sum/n; else print 0 }' "$file")
@@ -88,23 +98,32 @@ analyze_pr_size() {
     local p90_cycle
     p90_cycle=$(awk '{print $1}' "$file" | sort -n | percentile 90)
 
-    printf "  %-6s %8s %6d %15s %12s %12s\n" "$label" "$range" "$count" "$(format_duration $avg_cycle)" "$avg_rounds" "$(format_duration $p90_cycle)"
+    local bar=""
+    if [[ $max_cycle -gt 0 ]]; then
+      bar=$(graph_bar "$avg_cycle" "$max_cycle" 20)
+    fi
 
-    echo "$avg_cycle" >&2
+    printf "  %-6s %8s %6d %15s %s %12s %12s\n" "$label" "$range" "$count" "$(format_duration $avg_cycle)" "$bar" "$avg_rounds" "$(format_duration $p90_cycle)"
   }
 
   # Capture avg cycle times for insight
-  xs_avg=$(display_bucket "XS" "1-10" "$XS_FILE" 2>&1 1>/dev/null)
-  s_avg=$(display_bucket "S" "11-50" "$S_FILE" 2>&1 1>/dev/null)
-  m_avg=$(display_bucket "M" "51-200" "$M_FILE" 2>&1 1>/dev/null)
-  l_avg=$(display_bucket "L" "201-500" "$L_FILE" 2>&1 1>/dev/null)
-  xl_avg=$(display_bucket "XL" "500+" "$XL_FILE" 2>&1 1>/dev/null)
+  xs_avg=$(calc_bucket_avg "$XS_FILE")
+  s_avg=$(calc_bucket_avg "$S_FILE")
+  m_avg=$(calc_bucket_avg "$M_FILE")
+  l_avg=$(calc_bucket_avg "$L_FILE")
+  xl_avg=$(calc_bucket_avg "$XL_FILE")
 
-  display_bucket "XS" "1-10" "$XS_FILE" 2>/dev/null
-  display_bucket "S" "11-50" "$S_FILE" 2>/dev/null
-  display_bucket "M" "51-200" "$M_FILE" 2>/dev/null
-  display_bucket "L" "201-500" "$L_FILE" 2>/dev/null
-  display_bucket "XL" "500+" "$XL_FILE" 2>/dev/null
+  # Find max avg cycle time for bar scaling
+  local max_cycle_avg=0
+  for avg in $xs_avg $s_avg $m_avg $l_avg $xl_avg; do
+    [[ $avg -gt $max_cycle_avg ]] && max_cycle_avg=$avg
+  done
+
+  display_bucket "XS" "1-10" "$XS_FILE" "$max_cycle_avg"
+  display_bucket "S" "11-50" "$S_FILE" "$max_cycle_avg"
+  display_bucket "M" "51-200" "$M_FILE" "$max_cycle_avg"
+  display_bucket "L" "201-500" "$L_FILE" "$max_cycle_avg"
+  display_bucket "XL" "500+" "$XL_FILE" "$max_cycle_avg"
 
   echo ""
 

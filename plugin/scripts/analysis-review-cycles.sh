@@ -84,10 +84,15 @@ analyze_review_cycles() {
 
   avg_cycles=$(awk '{ sum += $1; n++ } END { if(n>0) printf "%.1f", sum/n; else print 0 }' "$CYCLES_FILE")
 
-  echo "  1 round (approved directly): $one_cycle PRs (${one_pct}%)"
-  echo "  2 rounds: $two_cycles PRs (${two_pct}%)"
-  echo "  3 rounds: $three_cycles PRs (${three_pct}%)"
-  echo "  4+ rounds: $four_plus PRs (${four_pct}%)"
+  local cycle_max=$one_cycle
+  [[ $two_cycles -gt $cycle_max ]] && cycle_max=$two_cycles
+  [[ $three_cycles -gt $cycle_max ]] && cycle_max=$three_cycles
+  [[ $four_plus -gt $cycle_max ]] && cycle_max=$four_plus
+
+  echo "  1 round (approved directly): $(graph_bar "$one_cycle" "$cycle_max" 20) $one_cycle PRs (${one_pct}%)"
+  echo "  2 rounds:                    $(graph_bar "$two_cycles" "$cycle_max" 20) $two_cycles PRs (${two_pct}%)"
+  echo "  3 rounds:                    $(graph_bar "$three_cycles" "$cycle_max" 20) $three_cycles PRs (${three_pct}%)"
+  echo "  4+ rounds:                   $(graph_bar "$four_plus" "$cycle_max" 20) $four_plus PRs (${four_pct}%)"
   echo ""
   echo "  Average cycles per PR: $avg_cycles"
   echo ""

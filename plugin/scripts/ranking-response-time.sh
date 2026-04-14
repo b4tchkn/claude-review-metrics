@@ -12,20 +12,27 @@ render_response_time() {
   fi
 
   echo "[Avg Response Time] (fastest)"
-  echo "$RESPONSE_TIMES" | jq -r '
+  local data max_val
+  data=$(echo "$RESPONSE_TIMES" | jq -r '
     to_entries |
     map(select(.value.count > 0)) |
     map({
       key: .key,
-      avgSeconds: (.value.totalSeconds / .value.count),
+      avgSeconds: ((.value.totalSeconds / .value.count) | floor),
       count: .value.count
     }) |
     sort_by(.avgSeconds) |
     .[0:3] |
     to_entries |
     .[] |
-    "  \(.key + 1). \(.value.key): \((.value.avgSeconds / 3600) | floor)h \(((.value.avgSeconds % 3600) / 60) | floor)m (\(.value.count) reviews)"
-  '
+    "\(.key + 1)\t\(.value.key)\t\(.value.avgSeconds)\t\(.value.count)"')
+  max_val=$(echo "$data" | tail -1 | cut -f3)
+  while IFS=$'\t' read -r rank name seconds count; do
+    [[ -z "$rank" ]] && continue
+    local hours=$((seconds / 3600))
+    local minutes=$(((seconds % 3600) / 60))
+    printf "  %s. %-12s %s %dh %dm (%s reviews)\n" "$rank" "$name" "$(graph_bar "$seconds" "$max_val")" "$hours" "$minutes" "$count"
+  done <<< "$data"
 }
 
 run_ranking "Response Time Ranking" render_response_time "$@"
